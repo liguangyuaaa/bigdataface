@@ -1,0 +1,93 @@
+SELECT user_id, COUNT(*) as opened_levels
+FROM (
+    SELECT '8373613' as user_id, 1603189321 as event_timestamp
+    UNION ALL
+    SELECT '8373613' as user_id, 1603189321 as event_timestamp
+    UNION ALL
+    SELECT '8373613' as user_id, 1603189321 as event_timestamp
+    UNION ALL
+    SELECT '8373613' as user_id, 1603189321 as event_timestamp
+    UNION ALL
+    SELECT '8373613' as user_id, 1603189321 as event_timestamp
+    UNION ALL
+    SELECT '8373613' as user_id, 1603189321 as event_timestamp
+) AS user_events
+WHERE FROM_UNIXTIME(event_timestamp) >= '2020-09-01' AND FROM_UNIXTIME(event_timestamp) < '2020-10-01'
+GROUP BY user_id
+HAVING opened_levels >= 1000 AND opened_levels < 2000;
+
+=========================================
+------------------------------------------
+
+实体关系建模：
+俱乐部、棋手、会员、锦标赛和比赛这五个主要实体。以下是这些实体的详细描述和它们之间的关系：
+
+俱乐部（Clubs）:
+属性：ID（唯一标识符）、名称、地址、其他细节
+关系：一个俱乐部可以有多名会员；一个俱乐部可以举办多个锦标赛。
+
+棋手（Players）:
+属性：ID（唯一标识符）、名称、地址、其他细节、排名
+关系：一个棋手只能有一个排名；一个棋手只能是一个俱乐部的会员；一个棋手可以参加零次或多次锦标赛；一个棋手可以参加多场比赛。
+
+会员（Members）:
+属性：ID（唯一标识符）
+关系：一个俱乐部可以有多名会员。
+
+锦标赛（Tournaments）:
+属性：代码（唯一标识符）、名称、开始日期、结束日期
+关系：一个锦标赛可以由多个俱乐部举办；一个锦标赛可以由多个赞助方赞助；一个锦标赛可以有多名棋手参加；一个锦标赛可以有多场比赛。
+
+比赛（Matches）:
+属性：ID（唯一标识符）
+关系：一个比赛属于一个锦标赛；一个比赛有两个参赛棋手。
+
+-- -------------------------------
+维度建模：
+
+维度表：
+
+    俱乐部维度表（Club Dimension）:
+        俱乐部ID (ClubID) - 主键
+        俱乐部名称 (ClubName)
+        俱乐部地址 (ClubAddress)
+        其他细节 (OtherDetails)
+
+    棋手维度表（Player Dimension）:
+        棋手ID (PlayerID) - 主键
+        棋手名称 (PlayerName)
+        棋手地址 (PlayerAddress)
+        其他细节 (OtherDetails)
+        排名 (Rank)
+        所属俱乐部ID (ClubID) - 外键
+
+    会员维度表（Member Dimension）:
+        会员ID (MemberID) - 主键
+        会员名称 (MemberName)
+        其他会员相关信息 (OtherMemberDetails)
+        所属俱乐部ID (ClubID) - 外键
+
+    锦标赛维度表（Tournament Dimension）:
+        锦标赛代码 (TournamentCode) - 主键
+        锦标赛名称 (TournamentName)
+        开始日期 (StartDate)
+        结束日期 (EndDate)
+        举办俱乐部ID (ClubID) - 外键
+
+    赞助方维度表（Sponsor Dimension）:
+        赞助方ID (SponsorID) - 主键
+        赞助方名称 (SponsorName)
+        其他细节 (OtherSponsorDetails)
+
+
+事实表：
+
+    比赛事实表（Match Fact Table）:
+        比赛ID (MatchID) - 主键
+        锦标赛代码 (TournamentCode) - 外键到锦标赛维度表
+        俱乐部ID (ClubID) - 外键到俱乐部维度表
+        棋手ID1 (PlayerID1) - 外键到棋手维度表
+        棋手ID2 (PlayerID2) - 外键到棋手维度表
+        会员ID (MemberID) - 外键到会员维度表
+        比赛结果 (MatchResult)
+        其他度量 (OtherMeasures) - 如比赛时间、得分等
